@@ -21,3 +21,6 @@ OpenWrt One> version
 U-Boot 2024.10-OpenWrt-r28161-ea17e958b9 (Dec 03 2024 - 11:41:08 +0000)
 ```
 
+Boot options from this screen will install and boot into a standard linux shell. [^buthow]
+
+[^buthow]: Not sure exactly how this goes. TOOD redo this section.
