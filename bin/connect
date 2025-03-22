@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+usage () {
+    echo "Usage: $0 -m <serial|ssh>"
+}
+
+debug () {
+    if [ -n "$verbose" ]; then
+        echo "$@"
+    fi
+}
+
+info () {
+    echo "$@"
+}
+
+error () {
+    echo "Error: $*"
+}
+
+verbose=0
+while getopts "m:v" opt; do
+    case $opt in
+        m)
+            mode="$OPTARG"
+            ;;
+        v)
+            verbose=1
+            ;;
+
+        *)
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if [ -n "$verbose" ]; then
+    debug "Verbose mode enabled."
+fi
+
+if [ -z "$mode" ]; then
+    echo "Error: Mode (-m) is required."
+    usage
+    exit 1
+fi
+
+case "$mode" in
+    serial)
+        DEFAULT_BAUD=115200
+        echo "Connecting via serial..."
+        DEV_TTY=$(sudo dmesg | grep -i tty | head -1 | awk '{print $4}' | sed s/://g)
+        if [ -z "$DEV_TTY" ]; then
+            error "No serial device found."
+            exit 1
+        fi
+        debug "Serial device found: $DEV_TTY"
+        sudo minicom -D "/dev/$DEV_TTY" -b "$DEFAULT_BAUD"
+        code="$?"
+        info "minicom exited ($code)"
+        exit $code
+        ;;
+    usb)
+        error "USB connection not implemented."
+        exit 1
+        ;;
+    *)
+        error "Invalid mode: $mode"
+        usage
+        exit 1
+        ;;
+esac

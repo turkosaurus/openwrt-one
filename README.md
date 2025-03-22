@@ -10,9 +10,21 @@ notes, commands, and scripts for OpenWRT One router
 > Notes based on use of Ubuntu 24
 
 ## serial
+Find recent tty connecitons:
+```sh
+sudo dmesg | grep -i tty
+```
+
+Store most recent file to var:
+```sh
+$ export DEV_TTY=$(sudo dmesg | grep -i tty | head -1 | awk '{print $4}' | sed s/://g)
+$ echo $DEV_TTY
+ttyACM0
+```
+
 Connect over USB serial console:
 ```sh
-sudo minicom -D /dev/ttyACM0 -b 115200
+sudo minicom -D $DEV_TTY -b 115200
 ```
 
 Press `enter` to bring up the prompt:
