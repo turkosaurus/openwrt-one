@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage () {
-    echo "Usage: $0 -m <serial|ssh>"
+    echo "Usage: $0 -m <serial|ssh> -f <path-to-pubkey>"
 }
 
 debug () {
@@ -18,7 +18,6 @@ error () {
     echo "Error: $*"
 }
 
-verbose=0
 while getopts "m:v" opt; do
     case $opt in
         m)
@@ -27,7 +26,9 @@ while getopts "m:v" opt; do
         v)
             verbose=1
             ;;
-
+        k)
+            key="$OPTARG"
+            ;;
         *)
             usage
             exit 1
@@ -45,6 +46,23 @@ if [ -z "$mode" ]; then
     exit 1
 fi
 
+if [ -z "$key" ]; then
+    # TODO don't use 2, use better method than ls | grep
+    key=$(ls ~/.ssh | grep '\.pub' | xargs | awk '{print $2}')
+    key="$HOME/.ssh/$key"
+    if [ -z "$key" ]; then
+        error "No public key provided, nor found in ~/.ssh"
+        usage
+        exit 1
+    fi
+fi
+if [ ! -f "$key" ]; then
+    error "Public key not found: $key"
+    exit 1
+else
+    echo "Using public key: $key"
+fi
+
 case "$mode" in
     serial)
         DEFAULT_BAUD=115200
@@ -60,8 +78,21 @@ case "$mode" in
         info "minicom exited ($code)"
         exit $code
         ;;
-    usb)
-        error "USB connection not implemented."
+    ssh)
+        # ssh -o PasswordAuthentication=no root@192.168.1.1
+        if ! ssh root@openwrt.lan "ls /root/.ssh &> /dev/null"; then
+            echo "Creating .ssh dir for root"
+            ssh root@openwrt.lan "mkdir /root/.ssh && chmod 700 /root/.ssh && touch /root/.ssh/authorized_keys"
+
+            echo "Copying public key to authorized_keys"
+            ssh root@openwrt.lan "cat >> /root/.ssh/authorized_keys" < "$key"
+
+            echo "Setting permissions"
+            ssh root@openwrt.lan "chmod 600 /root/.ssh/authorized_keys"
+
+            # ssh root@openwrt.lan "chmod 700 /root/.ssh"
+        fi
+        ssh -o PasswordAuthentication=no root@openwrt.lan "echo woo"
         exit 1
         ;;
     *)
