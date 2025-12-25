@@ -17,7 +17,11 @@ sudo dmesg | grep -i tty
 
 Store most recent file to var:
 ```sh
-$ export DEV_TTY=$(sudo dmesg | grep -i tty | head -1 | awk '{print $4}' | sed s/://g)
+export DEV_TTY=$(sudo dmesg | grep -i tty | head -1 | awk '{print $4}' | sed s/://g)
+```
+
+Confirm:
+```sh
 $ echo $DEV_TTY
 ttyACM0
 ```
