@@ -79,20 +79,35 @@ case "$mode" in
         exit $code
         ;;
     ssh)
-        # ssh -o PasswordAuthentication=no root@192.168.1.1
         if ! ssh root@openwrt.lan "ls /root/.ssh &> /dev/null"; then
-            echo "Creating .ssh dir for root"
+            info "Running initial setup..."
+
+            debug "Creating .ssh dir for root..."
             ssh root@openwrt.lan "mkdir /root/.ssh && chmod 700 /root/.ssh && touch /root/.ssh/authorized_keys"
 
-            echo "Copying public key to authorized_keys"
+            debug "Copying public key to authorized_keys"
             ssh root@openwrt.lan "cat >> /root/.ssh/authorized_keys" < "$key"
 
-            echo "Setting permissions"
+            debug "Setting permissions"
             ssh root@openwrt.lan "chmod 600 /root/.ssh/authorized_keys"
 
-            # ssh root@openwrt.lan "chmod 700 /root/.ssh"
+            debug "Disabling password authentication"
+
+ssh root@openwrt.lan << 'EOF'
+uci set dropbear.@dropbear[0].PasswordAuth="0"
+uci set dropbear.@dropbear[0].RootPasswordAuth="0"
+uci commit dropbear
+service dropbear restart
+EOF
+
+            debug "Password authentication disabled"
+            info "Initial setup complete!"
+            if ! ssh -o PasswordAuthentication=no root@openwrt.lan "echo 'SSH passwordless authentication success!'"; then
+                error "Initial setup failed."
+                exit 1
+            fi
         fi
-        ssh -o PasswordAuthentication=no root@openwrt.lan "echo woo"
+        ssh root@openwrt.lan
         exit 1
         ;;
     *)
